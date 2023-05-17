@@ -5,4 +5,4 @@
 
 Для корректного использованияследует иметь python3 и библиотеки requests,random, string, http, socket, urllib.parse, httpx, zlib, sys.
 
-Для запуска требуется написать "pythom3 realization.py "ссылка на проверяемый сайт"
+Для запуска требуется написать "pythom3 realization.py "ссылка на проверяемый сайт" "
