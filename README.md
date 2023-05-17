@@ -20,7 +20,7 @@
  zlib
  sys
 
-Для запуска требуется написать "python3 realization.py "ссылка на проверяемый сайт" "
+Для запуска требуется ввести команду "python3 realization.py "ссылка на проверяемый сайт" "
 
 Пример запуска - 
 python3 realization.py https://cv-gml.ru/login
