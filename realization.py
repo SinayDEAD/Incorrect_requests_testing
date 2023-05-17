@@ -199,10 +199,10 @@ def send_invalid_delete(url):
 
     try:
         response = requests.get(url, headers=head)
-        print('Deleted Connection -> ',response)
+        print('Deleted Cookies -> ',response)
         return response
     except http.client.HTTPException as e:
-        print('Deleted Connection -> ',str(e))
+        print('Deleted Cookies -> ',str(e))
         return str(e)
 
 
