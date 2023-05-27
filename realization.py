@@ -4,9 +4,13 @@ import string
 import http
 import socket
 import urllib.parse
-import httpx
 import zlib
 import sys
+import subprocess
+import http.client
+import ssl
+from urllib.parse import urlparse
+import http.client
 
 #url = 'https://cv-gml.ru/login'
 
@@ -25,22 +29,19 @@ def send_invalid_method(url):
         return str(e)
 
 def send_invalid_version(url):
-    parsed_url = http.client.urlsplit(url)
-    host = parsed_url.netloc
-    path = parsed_url.path
-    conn = http.client.HTTPConnection(host)
+    headers = {"User-Agent": "My User Agent",
+               "Upgrade-Insecure-Requests": "3.0"
+    } # Неверная версия протокола}
     try:
-        request_line = "GET {} HTTP/3.0\r\n".format(path)
-        conn.request("GET", path, headers={"Host": host, "User-Agent": "My User Agent"})
-        response = conn.getresponse()
-        content = response.read()
-        print('invalid version -> ', content)
+        response = requests.get(url, headers=headers)
+        print('Non-existent page -> ',response)
+        response.raise_for_status() # Генерирует исключение, если получен неправильный статус ответа
+        content = response.content
+        print('Содержимое ->', content)
         return content
-    except http.client.HTTPException as e:
-        print('invalid version -> ',str(e))
+    except requests.exceptions.RequestException as e:
+        print('Ошибка ->', str(e))
         return str(e)
-    finally:
-        conn.close()
 
 
 
@@ -94,17 +95,6 @@ def send_invalid_method(url):
         print('Incorrect method -> ',str(e))
         return str(e)
 
-def send_http2_request(url):
-    try:
-        client = httpx.Client(http2=True)
-        response = client.get(url)
-        print('HTTP/2 -> ',response)
-        return response
-    except httpx.HTTPError as e:
-        print('HTTP/2 -> ',str(e))
-        return str(e)
-    finally:
-        client.close()
 
 
 def send_big_length(url):
@@ -223,14 +213,19 @@ def send_invalid_crlf(url):
 def send_invalid_request_body(url):
     try:
         payload = "<invalid_payload>"
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": url,
+            "Content-Type": "application/json",
+        }
         response = requests.post(url, data=payload, headers=headers)
         print('Invalid request body -> ',response)
         return response
     except requests.exceptions.RequestException as e:
         print('Invalid request body -> ',str(e))
         return str(e)
-
+    
 def send_invalid_request_body_length(url):
     try:
         payload = "Invalid payload with incorrect length"
@@ -264,6 +259,9 @@ def send_invalid_delimiters(url):
     try:
         payload = "Invalid payload"
         headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": url,
             "Content-Type": "application/x-www-form-urlencoded"
         }
         body = "%%%" + payload + "###"
@@ -279,6 +277,9 @@ def send_invalid_fragments(url):
     try:
         payload = "Invalid payload"
         headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": url,
             "Content-Type": "text/plain"
         }
         fragments = ["$%^&", "@!#*", "&$#!"]
@@ -294,6 +295,9 @@ def send_invalid_missed(url):
     try:
         payload = "Invalid payload"
         headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": url,
             "Content-Length": "99999",
             "Content-Type": "text/plain"
         }
@@ -331,19 +335,58 @@ def send_invalid_format(url):
         return str(e)
 
 
-def send_invalid_big_body(url):
+def send_big_length_request(url):
+    headers = {
+        "User-Agent": "Invalid user agent",
+        "Content-Type": "text/plain",
+        "Transfer-Encoding": "chunked",
+        "Cache-Control": "no-cache"
+    }
+    data = "x" * 999999999 # Creating excessively large data
+
     try:
-        invalid_payload = "Invalid payload"
-        headers = {
-            "Content-Length": "9999999999999999999999999999999999999"
-        }
-        response = requests.post(url, data=invalid_payload, headers=headers)
-        print('Unexpected Content-length -> ',response)
+        response = requests.post(url, headers=headers, data=data, timeout=1)
+        print("Invalid BIG-Length ->", response.status_code)
+        print(response.text)
         return response
-    except requests.exceptions.RequestException as e:
-        print('Unexpected Content-length -> ',str(e))
+    except requests.RequestException as e:
+        print("Invalid BIG-Length ->", str(e))
         return str(e)
 
+def send_http2_request(url):
+    headers = {
+        "HTTP-Version": "HTTP/2.0",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": url,
+    }
+    try:
+        response = requests.get(url, headers=headers, timeout=1)
+        print('HTTP/2 - > ', response)
+        return response
+    except requests.exceptions.RequestException as e:
+        print('HTTP/2 - > ' , str(e))
+        return str(e)
+
+def send_invalid_http_request(url):
+    headers = {
+        "HTTP-Version": "HTTP/0.7",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": url,
+    }
+    try:
+        response = requests.get(url, headers=headers, timeout=1)
+        print('HTTP/0.7- > ', response)
+        return response
+    except requests.exceptions.RequestException as e:
+        print('HTTP/0.7 - > ' , str(e))
+        return str(e)
+   
+    
+    
+    
+    
 send_invalid_method(url)
 send_invalid_version(url)
 send_invalid_protocol(url)
@@ -357,6 +400,7 @@ send_invalid_type(url)
 send_invalid_encoding(url)
 send_invalid_cash(url)
 send_invalid_null(url)
+send_http2_request(url)
 send_invalid_delete(url)
 send_invalid_crlf(url)
 send_invalid_request_body(url)
@@ -366,5 +410,6 @@ send_invalid_delimiters(url)
 send_invalid_fragments(url)
 send_invalid_missed(url)
 send_invalid_json(url)
+send_invalid_http_request(url)
 send_invalid_format(url)
 send_invalid_big_body(url)
