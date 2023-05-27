@@ -368,20 +368,30 @@ def send_http2_request(url):
         print('HTTP/2 - > ' , str(e))
         return str(e)
 
-def send_invalid_http_request(url):
+def send_invalid_protocol_request(url):
     headers = {
-        "HTTP-Version": "HTTP/0.7",
+        "HTTP-Version": "HTTP/3.5",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9",
         "Referer": url,
+        "Content-Type": "text/plain"
     }
+
+    parsed_url = urllib.parse.urlparse(url)
+    invalid_url = url
+
     try:
-        response = requests.get(url, headers=headers, timeout=1)
-        print('HTTP/0.7- > ', response)
-        return response
-    except requests.exceptions.RequestException as e:
-        print('HTTP/0.7 - > ' , str(e))
-        return str(e)
+        with httpx.Client() as client:
+            response = client.get(invalid_url, headers=headers)
+        if len(response.content) == 0:
+            print('Empty Response')
+        else:
+            print('HTTP/2 >', response.status_code)
+
+            return response
+
+    except httpx.RequestError as e:
+        print('Request Error:', str(e))
    
     
     
@@ -410,6 +420,6 @@ send_invalid_delimiters(url)
 send_invalid_fragments(url)
 send_invalid_missed(url)
 send_invalid_json(url)
-send_invalid_http_request(url)
+send_invalid_protocol_request(url)
 send_invalid_format(url)
 send_invalid_big_body(url)
