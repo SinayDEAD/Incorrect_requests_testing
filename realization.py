@@ -355,18 +355,20 @@ def send_big_length_request(url):
 
 def send_http2_request(url):
     headers = {
-        "HTTP-Version": "HTTP/2.0",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Cache-Control": "no-cache",
         "Accept-Language": "en-US,en;q=0.9",
         "Referer": url,
+        "Content-Type": "text/plain"
     }
+
     try:
-        response = requests.get(url, headers=headers, timeout=1)
-        print('HTTP/2 - > ', response)
-        return response
-    except requests.exceptions.RequestException as e:
-        print('HTTP/2 - > ' , str(e))
-        return str(e)
+        with httpx.Client(http2=True) as client:
+            response = client.get(url, headers=headers)
+        if len(response.content) == 0:
+            print('Empty Response')
+            return response
+        print('HTTP/2 >', response.status_code)
 
 def send_invalid_protocol_request(url):
     headers = {
