@@ -421,7 +421,28 @@ def send_big_length2(url):
         print('Request Error ->', str(e))
         return str(e)
 
+import subprocess    
+#если возникает проблема всё-таки с отправкой большой длиины используйте этот код 
+def send_big_length4(url):
+    ncat_process = subprocess.Popen(['nc', '-l', '-p', '80'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    url = url + ':80'
+    # Отправляем запрос с использованием curl
+    curl_command = ['curl', '-X', 'POST', '-H', 'Content-Length: 9999999', '-d', 'data=Hello', url]
+    curl_process = subprocess.Popen(curl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+    # Получаем вывод curl (если необходимо)
+    curl_output, curl_error = curl_process.communicate()
+    print("Output from curl:")
+    print(curl_output.decode())
+    return 0
+
+    # Получаем вывод netcat (если необходимо)
+    ncat_output, ncat_error = ncat_process.communicate()
+    print("Output from netcat:")
+    print(ncat_output.decode())
+    return 0
+
+#send_big_length4(url)
 send_big_length2(url)
 send_invalid_method(url)
 send_invalid_version(url)
