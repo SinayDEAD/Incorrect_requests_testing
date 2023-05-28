@@ -11,11 +11,12 @@ import http.client
 import ssl
 from urllib.parse import urlparse
 import http.client
+import httpx
 
-#url = 'https://cv-gml.ru/login'
+url = 'https://cv-gml.ru/login'
 
-print ("Введите ссылку для проверки на некорректные запросы: ", sys.argv[1])
-url = str(sys.argv[1])
+#print ("Введите ссылку для проверки на некорректные запросы: ", sys.argv[1])
+#url = str(sys.argv[1])
 parsed_url = urllib.parse.urlparse(url)
 
 #########################################
@@ -37,7 +38,6 @@ def send_invalid_version(url):
         print('Non-existent page -> ',response)
         response.raise_for_status() # Генерирует исключение, если получен неправильный статус ответа
         content = response.content
-        print('Содержимое ->', content)
         return content
     except requests.exceptions.RequestException as e:
         print('Ошибка ->', str(e))
@@ -225,7 +225,7 @@ def send_invalid_request_body(url):
     except requests.exceptions.RequestException as e:
         print('Invalid request body -> ',str(e))
         return str(e)
-    
+
 def send_invalid_request_body_length(url):
     try:
         payload = "Invalid payload with incorrect length"
@@ -298,7 +298,7 @@ def send_invalid_missed(url):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
             "Accept-Language": "en-US,en;q=0.9",
             "Referer": url,
-            "Content-Length": "99999",
+            "Content-Length": "",
             "Content-Type": "text/plain"
         }
         response = requests.post(url, data=payload, headers=headers)
@@ -345,9 +345,8 @@ def send_big_length_request(url):
     data = "x" * 999999999 # Creating excessively large data
 
     try:
-        response = requests.post(url, headers=headers, data=data, timeout=1)
+        response = requests.post(url, headers=headers, data=data)
         print("Invalid BIG-Length ->", response.status_code)
-        print(response.text)
         return response
     except requests.RequestException as e:
         print("Invalid BIG-Length ->", str(e))
@@ -367,8 +366,12 @@ def send_http2_request(url):
             response = client.get(url, headers=headers)
         if len(response.content) == 0:
             print('Empty Response')
-            return response
-        print('HTTP/2 >', response.status_code)
+        else:
+            print('HTTP/2 >', response.status_code)
+        return response
+    except httpx.RequestError as e:
+        print('Request Error:', str(e))
+        return str(e)
 
 def send_invalid_protocol_request(url):
     headers = {
@@ -388,17 +391,38 @@ def send_invalid_protocol_request(url):
         if len(response.content) == 0:
             print('Empty Response')
         else:
-            print('HTTP/2 >', response.status_code)
+            print('HTTP/3.5 >', response.status_code)
+        return response
+
+    except httpx.RequestError as e:
+        print('Request Error:', str(e))
+        return str(e)
+
+def send_big_length2(url):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": url,
+    }
+    data = "x" * 99999999
+
+    try:
+        with httpx.Client(timeout=httpx.Timeout(60, write=120.0)) as client:
+            response = client.request("POST", url, headers=headers, data=data)
+
+            if len(response.content) == 0:
+                print('Empty Response')
+            else:
+                print('Response:', response.text)
 
             return response
 
     except httpx.RequestError as e:
-        print('Request Error:', str(e))
-   
-    
-    
-    
-    
+        print('Request Error ->', str(e))
+        return str(e)
+
+
+send_big_length2(url)
 send_invalid_method(url)
 send_invalid_version(url)
 send_invalid_protocol(url)
@@ -412,7 +436,6 @@ send_invalid_type(url)
 send_invalid_encoding(url)
 send_invalid_cash(url)
 send_invalid_null(url)
-send_http2_request(url)
 send_invalid_delete(url)
 send_invalid_crlf(url)
 send_invalid_request_body(url)
@@ -424,4 +447,3 @@ send_invalid_missed(url)
 send_invalid_json(url)
 send_invalid_protocol_request(url)
 send_invalid_format(url)
-send_invalid_big_body(url)
