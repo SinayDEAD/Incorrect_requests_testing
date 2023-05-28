@@ -434,7 +434,6 @@ def send_big_length4(url):
     curl_output, curl_error = curl_process.communicate()
     print("Output from curl:")
     print(curl_output.decode())
-    return 0
 
     # Получаем вывод netcat (если необходимо)
     ncat_output, ncat_error = ncat_process.communicate()
