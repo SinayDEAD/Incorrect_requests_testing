@@ -259,7 +259,7 @@ def send_invalid_delimiters(url):
     invalid_body_data = '%%%This|is|an|invalid|body###'
 
     # Отправляем запрос с некорректными разделителями в теле с использованием curl
-    curl_command = ['curl', '-X', 'POST', '-H', 'Content-Type: text/plain', '-d', invalid_body_data, url]
+    curl_command = ['curl', '-X', 'POST', '-H', 'Content-Type: application/x-www-form-urlencoded', '-d', invalid_body_data, url]
     curl_process = subprocess.Popen(curl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Получаем вывод curl
