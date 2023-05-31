@@ -19,7 +19,8 @@ from ftplib import FTP
 #url = 'https://cv-gml.ru/login'
 #url2 = 'https://www.reddit.gift-card.theworstclicker.ru/LTRIhFAt' фишинговый сайт (сейчас отключен)
 
-
+#print ("Введите ссылку для проверки на некорректные запросы: ", sys.argv[1])
+#url = str(sys.argv[1])
 
 def send_invalid_method(url):
     try:
