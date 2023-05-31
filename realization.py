@@ -5,6 +5,7 @@ import http
 import socket
 import urllib.parse
 import zlib
+import gzip
 import sys
 import subprocess
 import http.client
@@ -12,6 +13,8 @@ import ssl
 from urllib.parse import urlparse
 import http.client
 import httpx
+import subprocess
+from ftplib import FTP
 
 url = 'https://cv-gml.ru/login'
 
@@ -20,7 +23,7 @@ url = 'https://cv-gml.ru/login'
 parsed_url = urllib.parse.urlparse(url)
 
 #########################################
-def send_invalid_method(url):
+def send_invalid_method(url): #+
     try:
         response = requests.request("INVALID_METHOD", url)
         print('invalid method - > ', response)
@@ -43,28 +46,7 @@ def send_invalid_version(url):
         print('Ошибка ->', str(e))
         return str(e)
 
-
-
-from requests.adapters import HTTPAdapter
-
-class InvalidProtocolAdapter(HTTPAdapter):
-    def send(self, request, **kwargs):
-        request.url = request.url.replace('http://', 'invalid://')
-        return super().send(request, **kwargs)
-
-def send_invalid_protocol(url):
-    session = requests.Session()
-    session.mount('http://', InvalidProtocolAdapter())
-    try:
-        response = session.get(url)
-        print('invalid protocol -> ',response)
-        return response
-    except requests.exceptions.RequestException as e:
-        print('invalid protocol -> ' ,str(e))
-        return str(e)
-
-
-def send_invalid_page(url):
+def send_invalid_page(url): #+
     try:
         response = requests.get(url + "/nonexistent_page")
         print('Non-existent page -> ',response)
@@ -73,7 +55,7 @@ def send_invalid_page(url):
         print('Non-existent page -> ',str(e))
         return str(e)
 
-def send_invalid_parameters(url):
+def send_invalid_parameters(url): #+
     try:
         params = {
             "invalid_param": "value"
@@ -85,7 +67,7 @@ def send_invalid_parameters(url):
         print('Incorrect parameters -> ',str(e))
         return str(e)
 
-def send_invalid_method(url):
+def send_invalid_method(url): #+
     try:
         method = 'DELETE'
         response = requests.request(method, url)
@@ -95,21 +77,7 @@ def send_invalid_method(url):
         print('Incorrect method -> ',str(e))
         return str(e)
 
-
-
-def send_big_length(url):
-    headers = {
-    "Content-Length": "9999999999"
-    }
-    try:
-        response = requests.post(url, headers=headers, data="")
-        print('Invalid Content-length  -> ',response)
-        return response
-    except requests.RequestException as e:
-        print('Invalid Content-length  -> ',str(e))
-        return str(e)
-
-def send_invalid_UserAgent(url):
+def send_invalid_UserAgent(url): #+
     try:
         headers = {"User-Agent": "invalid-user-agent"}
         response = requests.get(url, headers=headers)
@@ -119,39 +87,39 @@ def send_invalid_UserAgent(url):
         print('Invalid User-agent -> ',str(e))
         return str(e)
 
-def send_invalid_type(url):
+def send_invalid_type(url): #+
     try:
+        payload = "<root>Invalid payload</root>"
         headers = {
-            "Content-Type": "application/invalid"
+            "Content-Type": "application/json"
         }
-        response = requests.get(url, headers=headers)
+        response = requests.post(url, headers=headers, data=payload)
         print('Invalid Content-Type -> ',response)
         return response
     except requests.RequestException as e:
         print('Invalid Content-Type -> ',str(e))
         return str(e)
 
-class InvalidTransferEncodingAdapter(requests.adapters.HTTPAdapter):
-    def add_headers(self, request, **kwargs):
-        request.headers["Transfer-Encoding"] = "invalid"
+def send_invalid_encoding(url): #+
+    # Отправляем запрос с использованием curl и неподдерживаемым Transfer-Encoding
+    curl_command = ['curl', '-X', 'POST', '-H', 'Transfer-Encoding: gzip', '-d', 'data=Hello', url]
+    curl_process = subprocess.Popen(curl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-def send_invalid_encoding(url):
-    try:
-        session = requests.Session()
-        session.mount("http://", InvalidTransferEncodingAdapter())
-        session.mount("https://", InvalidTransferEncodingAdapter())
-        response = session.get(url)
-        print('Invalid Trasfer-Encoding  -> ',response)
-        return response
-    except requests.exceptions.RequestException as e:
-        print('Invalid Trasfer-Encoding  -> ',str(e))
-        return str(e)
+    # Получаем вывод curl (если необходимо)
+    curl_output, curl_error = curl_process.communicate()
+    print("Output from curl:")
+    print(curl_output.decode())
+
+    # Получаем ошибку curl (если есть)
+    if curl_error:
+        print("Error from curl:")
+        print(curl_error.decode())
 
 class InvalidCacheControlAdapter(requests.adapters.HTTPAdapter):
     def add_headers(self, request, **kwargs):
         request.headers["Cache-Control"] = "invalid"
 
-def send_invalid_cash(url):
+def send_invalid_cash(url): #+
     try:
         session = requests.Session()
         session.mount("http://", InvalidCacheControlAdapter())
@@ -163,7 +131,7 @@ def send_invalid_cash(url):
         print('Invalid Cash-Control -> ',str(e))
         return str(e)
 
-def send_invalid_null(url):
+def send_invalid_null(url): #+
     try:
         parsed_url = urllib.parse.urlparse(url)
         path_bytes = parsed_url.path.encode()
@@ -178,39 +146,41 @@ def send_invalid_null(url):
         print('Null byte  -> ',str(e))
         return str(e)
 
+def send_invalid_delete(url): #+
+    # Отправляем запрос без куки с использованием curl
+    curl_command = ['curl', '-X', 'GET', '-H', 'Cookie:', '-D', '-', url]
+    curl_process = subprocess.Popen(curl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-def send_invalid_delete(url):
-    head= {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Referer": url,
-    "Cookie": "",
-    }
+    # Получаем вывод curl (включая заголовки ответа)
+    curl_output, curl_error = curl_process.communicate()
+    print("Output from curl:")
+    print(curl_output.decode())
 
-    try:
-        response = requests.get(url, headers=head)
-        print('Deleted Cookies -> ',response)
-        return response
-    except http.client.HTTPException as e:
-        print('Deleted Cookies -> ',str(e))
-        return str(e)
+    # Получаем ошибку curl (если есть)
+    if curl_error:
+        print("Error from curl:")
+        print(curl_error.decode())
 
+def send_invalid_crlf(url): # чисто попытка
+    parsed_url = urllib.parse.urlparse(url)
+    host = parsed_url.netloc
+    port = 80
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((host, port))
 
+    # Отправляем запрос с внедренными символами CRLF
+    request = "GET / HTTP/1.1\r\nHost: " + host +"\r\nUser-Agent: Mozilla/5.0\r\n\r\n"
+    print(request)
+    sock.send(request.encode())
 
-def send_invalid_crlf(url):
-    try:
-        headers = {
-            "Invalid-Header": "Invalid-Value\nContent-Type: application/json"
-        }
-        response = requests.get(url, headers=headers)
-        print('Empty CRLF -> ',response)
-        return response
-    except requests.exceptions.RequestException as e:
-        print('Empty CRLF -> ',str(e))
-        return str(e)
+    # Получаем ответ от сервера
+    response = sock.recv(4096)
+    print(response.decode())
 
+    # Закрываем соединение
+    sock.close()
 
-def send_invalid_request_body(url):
+def send_invalid_request_body(url): #+
     try:
         payload = "<invalid_payload>"
         headers = {
@@ -226,54 +196,72 @@ def send_invalid_request_body(url):
         print('Invalid request body -> ',str(e))
         return str(e)
 
-def send_invalid_request_body_length(url):
-    try:
-        payload = "Invalid payload with incorrect length"
-        headers = {
-            "Content-Type": "application/json",
-            "Content-Length": str(len(payload) - 1)
-        }
-        response = requests.post(url, data=payload, headers=headers)
-        print('Invalid request length -> ',response)
-        return response
-    except requests.exceptions.RequestException as e:
-        print('Invalid request length -> ',str(e))
-        return str(e)
+def send_invalid_request_body_length(url): #+
+    # Определяем тело запроса
+    request_body = 'This is the actual request body'
+    # Получаем длину тела запроса и уменьшаем её на 1
+    content_length = str(len(request_body) - 1)
 
-def send_invalid_gzip(url):
+    # Отправляем запрос с ошибочной длиной тела с использованием curl
+    curl_command = ['curl', '-X', 'POST', '-H', 'Content-Type: text/plain', '--header', 'Content-Length: ' + content_length, '-d', request_body, url]
+    curl_process = subprocess.Popen(curl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    # Получаем вывод curl (если необходимо)
+    curl_output, curl_error = curl_process.communicate()
+    print("Output from curl:")
+    print(curl_output.decode())
+
+    # Получаем ошибку curl (если есть)
+    if curl_error:
+        print("Error from curl:")
+        print(curl_error.decode())
+
+def send_invalid_gzip(url): #+
     try:
-        payload = "Invalid payload"
-        headers = {
-            "Content-Type": "application/json",
-            "Content-Encoding": "gzip"
-        }
-        compressed_data = zlib.compress(payload.encode())
+        # Определяем некорректные данные для сжатого тела запроса
+        invalid_body_data = 'This is an invalid compressed request body'
+
+        # Сжимаем данные с использованием zlib
+        compressed_data = zlib.compress(invalid_body_data.encode())
+
+        # Отправляем запрос с некорректным сжатым телом запроса с использованием requests
+        headers = {'Content-Type': 'application/json', 'Content-Encoding': 'gzip'}
         response = requests.post(url, data=compressed_data, headers=headers)
-        print('Broken gzip -> ',response)
-        return response
+
+        # Получаем ответ от сервера
+        print("Response status code:", response.status_code)
+        print("Response content:", response.text)
     except requests.exceptions.RequestException as e:
         print('Broken gzip -> ',str(e))
         return str(e)
 
-def send_invalid_delimiters(url):
-    try:
-        payload = "Invalid payload"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Referer": url,
-            "Content-Type": "application/x-www-form-urlencoded"
-        }
-        body = "%%%" + payload + "###"
-        response = requests.post(url, data=body, headers=headers)
-        print('Invalid delimiters -> ',response)
-        return response
-    except requests.exceptions.RequestException as e:
-        print('Invalid delimiters -> ',str(e))
-        return str(e)
+def send_invalid_delimiters(url): #+
+    # Определяем некорректные данные с ошибочными разделителями в теле запроса
+    invalid_body_data = '%%%This|is|an|invalid|body###'
 
+    # Отправляем запрос с некорректными разделителями в теле с использованием curl
+    curl_command = ['curl', '-X', 'POST', '-H', 'Content-Type: text/plain', '-d', invalid_body_data, url]
+    curl_process = subprocess.Popen(curl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-def send_invalid_fragments(url):
+    # Получаем вывод curl (если необходимо)
+    curl_output, curl_error = curl_process.communicate()
+
+    print("Output from curl:")
+    if curl_output:
+        try:
+            # Если данные сжаты, декодируем их с использованием gzip
+            if curl_output.startswith(b'\x1f\x8b'):
+                curl_output = gzip.decompress(curl_output)
+            print(curl_output.decode())
+        except UnicodeDecodeError:
+            print("Unable to decode output")
+
+            # Получаем ошибку curl (если есть)
+    if curl_error:
+        print("Error from curl:")
+        print(curl_error.decode())
+
+def send_invalid_fragments(url): #+
     try:
         payload = "Invalid payload"
         headers = {
@@ -292,26 +280,33 @@ def send_invalid_fragments(url):
         return str(e)
 
 def send_invalid_missed(url):
-    try:
-        payload = "Invalid payload"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Referer": url,
-            "Content-Length": "",
-            "Content-Type": "text/plain"
-        }
-        response = requests.post(url, data=payload, headers=headers)
-        print('Missed request length -> ',response)
-        return response
-    except requests.exceptions.RequestException as e:
-        print('Missed request length -> ',str(e))
-        return str(e)
+    # Отправляем запрос с отсутствующей длиной запроса с использованием curl
+    curl_command = ['curl', '-X', 'POST', '-H','Content-Length:', 'Content-Type: text/plain', '-d', b'Hello, world!', url]
+    curl_process = subprocess.Popen(curl_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    # Вводим данные в stdin процесса curl для отправки
+    curl_output, curl_error = curl_process.communicate()
+
+    print("Output from curl:")
+    if curl_output:
+        try:
+            # Если данные сжаты, декодируем их с использованием gzip
+            if curl_output.startswith(b'\x1f\x8b'):
+                curl_output = gzip.decompress(curl_output)
+            print(curl_output.decode())
+        except UnicodeDecodeError:
+            print("Unable to decode output")
+
+            # Получаем ошибку curl (если есть)
+    if curl_error:
+        print("Error from curl:")
+        print(curl_error.decode())
 
 def send_invalid_json(url):
     try:
-        invalid_payload = "Invalid payload"
+        invalid_payload = "wedrftgyhuji_@#$<>Invalid payload"
         headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
             "Content-Type": "application/json"
         }
         response = requests.post(url, data=invalid_payload, headers=headers)
@@ -325,7 +320,8 @@ def send_invalid_format(url):
     try:
         invalid_payload = "Invalid payload"
         headers = {
-            "Content-Type": "application/octet-stream"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Content-Type": "application/octeam"
         }
         response = requests.post(url, data=invalid_payload, headers=headers)
         print('Invalid format -> ',response)
@@ -334,23 +330,7 @@ def send_invalid_format(url):
         print('Invalid format -> ',str(e))
         return str(e)
 
-
-def send_big_length_request(url):
-    headers = {
-        "User-Agent": "Invalid user agent",
-        "Content-Type": "text/plain",
-        "Transfer-Encoding": "chunked",
-        "Cache-Control": "no-cache"
-    }
-    data = "x" * 999999999 # Creating excessively large data
-
-    try:
-        response = requests.post(url, headers=headers, data=data)
-        print("Invalid BIG-Length ->", response.status_code)
-        return response
-    except requests.RequestException as e:
-        print("Invalid BIG-Length ->", str(e))
-        return str(e)
+######################
 
 def send_http2_request(url):
     headers = {
@@ -373,61 +353,44 @@ def send_http2_request(url):
         print('Request Error:', str(e))
         return str(e)
 
-def send_invalid_protocol_request(url):
-    headers = {
-        "HTTP-Version": "HTTP/3.5",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": url,
-        "Content-Type": "text/plain"
-    }
+def send_invalid_protocol(url):
+    # Определяем некорректные данные с ошибочным протоколом HTTP/0.9
+    invalid_protocol_data = 'GET /index.html\n'
 
-    parsed_url = urllib.parse.urlparse(url)
-    invalid_url = url
+    # Запускаем ncat в отдельном процессе и передаем некорректные данные
+    ncat_process = subprocess.Popen(['ncat', url], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ncat_process.stdin.write(invalid_protocol_data.encode())
+    ncat_process.stdin.flush()
+    ncat_output, ncat_error = ncat_process.communicate()
+    ncat_process.stdin.close()
 
-    try:
-        with httpx.Client() as client:
-            response = client.get(invalid_url, headers=headers)
-        if len(response.content) == 0:
-            print('Empty Response')
-        else:
-            print('HTTP/3.5 >', response.status_code)
-        return response
+    # Получаем вывод ncat
 
-    except httpx.RequestError as e:
-        print('Request Error:', str(e))
-        return str(e)
+    # Получаем код ответа из вывода ncat
+    status_code = get_status_code(ncat_output.decode())
+    print("Status code:", status_code)
 
-def send_big_length2(url):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": url,
-    }
-    data = "x" * 99999999
+# Получаем ошибку ncat (если есть)
+    if ncat_error:
+        print("Error from ncat:")
+        print(ncat_error.decode())
 
-    try:
-        with httpx.Client(timeout=httpx.Timeout(60, write=120.0)) as client:
-            response = client.request("POST", url, headers=headers, data=data)
+def get_status_code(response_output):
+    lines = response_output.split('\n')
+    if len(lines) > 0:
+        status_line = lines[0]
+        if ' ' in status_line:
+            status_code = status_line.split(' ')[1]
+            return status_code.strip()
 
-            if len(response.content) == 0:
-                print('Empty Response')
-            else:
-                print('Response:', response.text)
+    return None
 
-            return response
+def send_big_content_length(url): # Наконецто рабочая ТВААААААРЬ
+    # Определяем некорректное значение для заголовка Content-Length
+    big_content_length = '9999999'
 
-    except httpx.RequestError as e:
-        print('Request Error ->', str(e))
-        return str(e)
-
-import subprocess    
-#если возникает проблема всё-таки с отправкой большой длиины используйте этот код 
-def send_big_length4(url):
-    ncat_process = subprocess.Popen(['nc', '-l', '-p', '80'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    url = url + ':80'
-    # Отправляем запрос с использованием curl
-    curl_command = ['curl', '-X', 'POST', '-H', 'Content-Length: 9999999', '-d', 'data=Hello', url]
+    # Отправляем запрос с некорректным значением Content-Length с использованием curl
+    curl_command = ['curl', '-X', 'POST', '-H', 'Content-Length: ' + big_content_length, url]
     curl_process = subprocess.Popen(curl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Получаем вывод curl (если необходимо)
@@ -435,35 +398,33 @@ def send_big_length4(url):
     print("Output from curl:")
     print(curl_output.decode())
 
-    # Получаем вывод netcat (если необходимо)
-    ncat_output, ncat_error = ncat_process.communicate()
-    print("Output from netcat:")
-    print(ncat_output.decode())
-    return 0
+    # Получаем ошибку curl (если есть)
+    if curl_error:
+        print("Error from curl:")
+        print(curl_error.decode())
 
-#send_big_length4(url)
-send_big_length2(url)
-send_invalid_method(url)
-send_invalid_version(url)
-send_invalid_protocol(url)
-send_invalid_page(url)
-send_invalid_parameters(url)
-send_invalid_method(url)
-send_http2_request(url)
-send_big_length(url)
-send_invalid_UserAgent(url)
-send_invalid_type(url)
-send_invalid_encoding(url)
-send_invalid_cash(url)
-send_invalid_null(url)
-send_invalid_delete(url)
-send_invalid_crlf(url)
-send_invalid_request_body(url)
-send_invalid_request_body_length(url)
-send_invalid_gzip(url)
-send_invalid_delimiters(url)
-send_invalid_fragments(url)
-send_invalid_missed(url)
-send_invalid_json(url)
-send_invalid_protocol_request(url)
-send_invalid_format(url)
+
+
+#send_invalid_method(url)
+#send_invalid_version(url)
+#send_invalid_page(url)
+#send_invalid_parameters(url)
+#send_invalid_method(url)
+#send_invalid_UserAgent(url)
+#send_invalid_type(url)
+#send_invalid_encoding(url)
+#send_invalid_cash(url)
+#send_invalid_null(url)
+#send_invalid_delete(url)
+#send_invalid_crlf(url)
+#send_invalid_request_body(url)
+#send_invalid_request_body_length(url)
+#send_invalid_gzip(url)
+#send_invalid_delimiters(url)
+#send_invalid_fragments(url)
+#send_invalid_missed(url)
+#send_invalid_json(url)
+#send_invalid_format(url)
+#send_http2_request(url)
+#send_invalid_protocol(url)
+#send_big_content_length(url)
