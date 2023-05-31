@@ -13,23 +13,23 @@
 
 Для корректного использования следует установить 
 1. python3 и библиотеки: 
-requests
-random
-string
-http
-socket
-urllib.parse
-zlib
-gzip
-sys
-subprocess
-http.client
-ssl
-urllib.parse 
-http.client
-httpx
-subprocess
-ftplib 
+requests,
+random,
+string,
+http,
+socket,
+urllib.parse,
+zlib,
+gzip,
+sys,
+subprocess,
+http.client,
+ssl,
+urllib.parse,
+http.client,
+httpx,
+subprocess,
+ftplib
 2. Доустановить curl и ncat
 
 Для запуска требуется ввести в консоль команду: 
