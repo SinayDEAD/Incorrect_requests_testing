@@ -16,14 +16,12 @@ import httpx
 import subprocess
 from ftplib import FTP
 
-url = 'https://cv-gml.ru/login'
+#url = 'https://cv-gml.ru/login'
+#url2 = 'https://www.reddit.gift-card.theworstclicker.ru/LTRIhFAt' фишинговый сайт (сейчас отключен)
 
-#print ("Введите ссылку для проверки на некорректные запросы: ", sys.argv[1])
-#url = str(sys.argv[1])
-parsed_url = urllib.parse.urlparse(url)
 
-#########################################
-def send_invalid_method(url): #+
+
+def send_invalid_method(url):
     try:
         response = requests.request("INVALID_METHOD", url)
         print('invalid method - > ', response)
@@ -35,18 +33,18 @@ def send_invalid_method(url): #+
 def send_invalid_version(url):
     headers = {"User-Agent": "My User Agent",
                "Upgrade-Insecure-Requests": "3.0"
-    } # Неверная версия протокола}
+    } # Неверный протокола
     try:
         response = requests.get(url, headers=headers)
-        print('Non-existent page -> ',response)
+        print('Invalid version -> ',response)
         response.raise_for_status() # Генерирует исключение, если получен неправильный статус ответа
         content = response.content
         return content
     except requests.exceptions.RequestException as e:
-        print('Ошибка ->', str(e))
+        print('Invalid version ->', str(e))
         return str(e)
 
-def send_invalid_page(url): #+
+def send_invalid_page(url):
     try:
         response = requests.get(url + "/nonexistent_page")
         print('Non-existent page -> ',response)
@@ -55,10 +53,10 @@ def send_invalid_page(url): #+
         print('Non-existent page -> ',str(e))
         return str(e)
 
-def send_invalid_parameters(url): #+
+def send_invalid_parameters(url):
     try:
         params = {
-            "invalid_param": "value"
+            "invalid_param": "value" #случайный параметр
         }
         response = requests.get(url, params=params)
         print('Incorrect parameters -> ',response)
@@ -67,9 +65,9 @@ def send_invalid_parameters(url): #+
         print('Incorrect parameters -> ',str(e))
         return str(e)
 
-def send_invalid_method(url): #+
+def send_invalid_method(url):
     try:
-        method = 'DELETE'
+        method = 'DELETE' # неверный метод
         response = requests.request(method, url)
         print('Incorrect method -> ',response)
         return response
@@ -77,9 +75,9 @@ def send_invalid_method(url): #+
         print('Incorrect method -> ',str(e))
         return str(e)
 
-def send_invalid_UserAgent(url): #+
+def send_invalid_UserAgent(url):
     try:
-        headers = {"User-Agent": "invalid-user-agent"}
+        headers = {"User-Agent": "invalid-user-agent"} #неверный user
         response = requests.get(url, headers=headers)
         print('Invalid User-agent -> ',response)
         return response
@@ -87,9 +85,9 @@ def send_invalid_UserAgent(url): #+
         print('Invalid User-agent -> ',str(e))
         return str(e)
 
-def send_invalid_type(url): #+
+def send_invalid_type(url):
     try:
-        payload = "<root>Invalid payload</root>"
+        payload = "<root>Invalid payload</root>" #неверный тип
         headers = {
             "Content-Type": "application/json"
         }
@@ -100,26 +98,34 @@ def send_invalid_type(url): #+
         print('Invalid Content-Type -> ',str(e))
         return str(e)
 
-def send_invalid_encoding(url): #+
+def send_invalid_encoding(url):
     # Отправляем запрос с использованием curl и неподдерживаемым Transfer-Encoding
     curl_command = ['curl', '-X', 'POST', '-H', 'Transfer-Encoding: gzip', '-d', 'data=Hello', url]
     curl_process = subprocess.Popen(curl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    # Получаем вывод curl (если необходимо)
+    # Получаем вывод curl
     curl_output, curl_error = curl_process.communicate()
     print("Output from curl:")
-    print(curl_output.decode())
+    if curl_output:
+        try:
+            # Если данные сжаты, декодируем их с использованием gzip
+            if curl_output.startswith(b'\x1f\x8b'):
+                curl_output = gzip.decompress(curl_output)
+            print('Invalid encoding ->', curl_output.decode())
+        except UnicodeDecodeError:
+            print("Unable to decode output")
 
-    # Получаем ошибку curl (если есть)
+            # Получаем ошибку curl
     if curl_error:
-        print("Error from curl:")
+        print('Invalid encoding error curl ->')
         print(curl_error.decode())
+
 
 class InvalidCacheControlAdapter(requests.adapters.HTTPAdapter):
     def add_headers(self, request, **kwargs):
         request.headers["Cache-Control"] = "invalid"
 
-def send_invalid_cash(url): #+
+def send_invalid_cash(url):
     try:
         session = requests.Session()
         session.mount("http://", InvalidCacheControlAdapter())
@@ -131,7 +137,7 @@ def send_invalid_cash(url): #+
         print('Invalid Cash-Control -> ',str(e))
         return str(e)
 
-def send_invalid_null(url): #+
+def send_invalid_null(url):
     try:
         parsed_url = urllib.parse.urlparse(url)
         path_bytes = parsed_url.path.encode()
@@ -146,22 +152,28 @@ def send_invalid_null(url): #+
         print('Null byte  -> ',str(e))
         return str(e)
 
-def send_invalid_delete(url): #+
+def send_invalid_delete(url):
     # Отправляем запрос без куки с использованием curl
     curl_command = ['curl', '-X', 'GET', '-H', 'Cookie:', '-D', '-', url]
     curl_process = subprocess.Popen(curl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    # Получаем вывод curl (включая заголовки ответа)
+    # Получаем вывод curl
     curl_output, curl_error = curl_process.communicate()
-    print("Output from curl:")
-    print(curl_output.decode())
+    if curl_output:
+        try:
+            # Если данные сжаты, декодируем их с использованием gzip
+            if curl_output.startswith(b'\x1f\x8b'):
+                curl_output = gzip.decompress(curl_output)
+            print('Invalid delete ->', curl_output.decode())
+        except UnicodeDecodeError:
+            print("Unable to decode output")
 
-    # Получаем ошибку curl (если есть)
+            # Получаем ошибку curl
     if curl_error:
-        print("Error from curl:")
+        print('Invalid delete error curl->')
         print(curl_error.decode())
 
-def send_invalid_crlf(url): # чисто попытка
+def send_invalid_crlf(url): # crlf попытка
     parsed_url = urllib.parse.urlparse(url)
     host = parsed_url.netloc
     port = 80
@@ -175,14 +187,14 @@ def send_invalid_crlf(url): # чисто попытка
 
     # Получаем ответ от сервера
     response = sock.recv(4096)
-    print(response.decode())
+    print('Invalid crlf ->' + response.decode())
 
     # Закрываем соединение
     sock.close()
 
-def send_invalid_request_body(url): #+
+def send_invalid_request_body(url):
     try:
-        payload = "<invalid_payload>"
+        payload = "<invalid_payload>" # ошибочное тело
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
             "Accept-Language": "en-US,en;q=0.9",
@@ -196,7 +208,7 @@ def send_invalid_request_body(url): #+
         print('Invalid request body -> ',str(e))
         return str(e)
 
-def send_invalid_request_body_length(url): #+
+def send_invalid_request_body_length(url):
     # Определяем тело запроса
     request_body = 'This is the actual request body'
     # Получаем длину тела запроса и уменьшаем её на 1
@@ -206,17 +218,23 @@ def send_invalid_request_body_length(url): #+
     curl_command = ['curl', '-X', 'POST', '-H', 'Content-Type: text/plain', '--header', 'Content-Length: ' + content_length, '-d', request_body, url]
     curl_process = subprocess.Popen(curl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    # Получаем вывод curl (если необходимо)
+    # Получаем вывод curl
     curl_output, curl_error = curl_process.communicate()
-    print("Output from curl:")
-    print(curl_output.decode())
+    if curl_output:
+        try:
+            # Если данные сжаты, декодируем их с использованием gzip
+            if curl_output.startswith(b'\x1f\x8b'):
+                curl_output = gzip.decompress(curl_output)
+            print('Invalid body length -> ', curl_output.decode())
+        except UnicodeDecodeError:
+            print("Unable to decode output")
 
-    # Получаем ошибку curl (если есть)
+            # Получаем ошибку curl
     if curl_error:
-        print("Error from curl:")
+        print('Invalid body length  error curl-> ')
         print(curl_error.decode())
 
-def send_invalid_gzip(url): #+
+def send_invalid_gzip(url):
     try:
         # Определяем некорректные данные для сжатого тела запроса
         invalid_body_data = 'This is an invalid compressed request body'
@@ -235,7 +253,7 @@ def send_invalid_gzip(url): #+
         print('Broken gzip -> ',str(e))
         return str(e)
 
-def send_invalid_delimiters(url): #+
+def send_invalid_delimiters(url):
     # Определяем некорректные данные с ошибочными разделителями в теле запроса
     invalid_body_data = '%%%This|is|an|invalid|body###'
 
@@ -243,7 +261,7 @@ def send_invalid_delimiters(url): #+
     curl_command = ['curl', '-X', 'POST', '-H', 'Content-Type: text/plain', '-d', invalid_body_data, url]
     curl_process = subprocess.Popen(curl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    # Получаем вывод curl (если необходимо)
+    # Получаем вывод curl
     curl_output, curl_error = curl_process.communicate()
 
     print("Output from curl:")
@@ -252,16 +270,16 @@ def send_invalid_delimiters(url): #+
             # Если данные сжаты, декодируем их с использованием gzip
             if curl_output.startswith(b'\x1f\x8b'):
                 curl_output = gzip.decompress(curl_output)
-            print(curl_output.decode())
+            print('Invalid delimiters -> ', curl_output.decode())
         except UnicodeDecodeError:
             print("Unable to decode output")
 
-            # Получаем ошибку curl (если есть)
+            # Получаем ошибку curl
     if curl_error:
-        print("Error from curl:")
+        print('Invalid delimiters error curl -> ')
         print(curl_error.decode())
 
-def send_invalid_fragments(url): #+
+def send_invalid_fragments(url):
     try:
         payload = "Invalid payload"
         headers = {
@@ -270,7 +288,7 @@ def send_invalid_fragments(url): #+
             "Referer": url,
             "Content-Type": "text/plain"
         }
-        fragments = ["$%^&", "@!#*", "&$#!"]
+        fragments = ["$%^&", "@!#*", "&$#!"] # некорректные фрагменты
         body = "".join(fragments) + payload
         response = requests.post(url, data=body, headers=headers)
         print('Encoding with incorrect fragments -> ',response)
@@ -293,13 +311,13 @@ def send_invalid_missed(url):
             # Если данные сжаты, декодируем их с использованием gzip
             if curl_output.startswith(b'\x1f\x8b'):
                 curl_output = gzip.decompress(curl_output)
-            print(curl_output.decode())
+            print('Invalid missed length -> ', curl_output.decode())
         except UnicodeDecodeError:
             print("Unable to decode output")
 
             # Получаем ошибку curl (если есть)
     if curl_error:
-        print("Error from curl:")
+        print('Invalid missed length error curl -> ')
         print(curl_error.decode())
 
 def send_invalid_json(url):
@@ -331,7 +349,7 @@ def send_invalid_format(url):
         return str(e)
 
 ######################
-
+# функции, которые являются показательными для тестирования для серверов evilginx2
 def send_http2_request(url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
@@ -364,13 +382,15 @@ def send_invalid_protocol(url):
     ncat_output, ncat_error = ncat_process.communicate()
     ncat_process.stdin.close()
 
-    # Получаем вывод ncat
+    if not ncat_output:
+        print('Empty Response')
 
     # Получаем код ответа из вывода ncat
     status_code = get_status_code(ncat_output.decode())
     print("Status code:", status_code)
 
 # Получаем ошибку ncat (если есть)
+
     if ncat_error:
         print("Error from ncat:")
         print(ncat_error.decode())
@@ -385,7 +405,7 @@ def get_status_code(response_output):
 
     return None
 
-def send_big_content_length(url): # Наконецто рабочая ТВААААААРЬ
+def send_big_content_length(url):
     # Определяем некорректное значение для заголовка Content-Length
     big_content_length = '9999999'
 
@@ -395,13 +415,20 @@ def send_big_content_length(url): # Наконецто рабочая ТВААА
 
     # Получаем вывод curl (если необходимо)
     curl_output, curl_error = curl_process.communicate()
-    print("Output from curl:")
-    print(curl_output.decode())
+    if curl_output:
+        try:
+            # Если данные сжаты, декодируем их с использованием gzip
+            if curl_output.startswith(b'\x1f\x8b'):
+                curl_output = gzip.decompress(curl_output)
+            print(curl_output.decode())
+        except UnicodeDecodeError:
+            print("Unable to decode output")
 
-    # Получаем ошибку curl (если есть)
+            # Получаем ошибку curl (если есть)
     if curl_error:
         print("Error from curl:")
         print(curl_error.decode())
+
 
 
 
